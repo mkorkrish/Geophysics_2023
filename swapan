@@ -1,0 +1,97 @@
+import pandas as pd
+import numpy as np
+import scipy.stats as stats
+from sklearn.linear_model import LinearRegression
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
+import matplotlib.pyplot as plt
+
+# Read the Excel spreadsheet into a pandas DataFrame
+df = pd.read_excel("geophysics_data.xlsx")
+
+# Replace non-numeric values with NaN
+df.replace('<0.01', np.nan, inplace=True)  # Replace '<0.01' with NaN, adjust as needed
+
+# Descriptive Statistics
+numeric_vars = ["Na %", "Mg %", "Al %", "Si %", "P %", "S %", "K % ", "%Ca", "%Ti", "%Mn", "%Fe"]  # Add other numeric variables as needed
+
+for var in numeric_vars:
+    desc_stats = df[var].describe()
+    print(f"Descriptive Statistics for {var}:")
+    print(desc_stats)
+    print()
+
+# Correlation Analysis
+corr_matrix = df[numeric_vars].corr()
+print("Correlation Matrix:")
+print(corr_matrix)
+print()
+
+# Hypothesis Testing (t-test)
+grouped_data = df.groupby("Formation")
+
+for var in numeric_vars:
+    upper_bakken = grouped_data.get_group("Upper Bakken")
+    lower_bakken = grouped_data.get_group("Lower Bakken")
+
+    # Convert columns to numeric data type
+    upper_bakken[var] = pd.to_numeric(upper_bakken[var], errors="coerce")
+    lower_bakken[var] = pd.to_numeric(lower_bakken[var], errors="coerce")
+
+    t_stat, p_value = stats.ttest_ind(upper_bakken[var].dropna(), lower_bakken[var].dropna(), nan_policy='omit')
+    print(f"Hypothesis Testing for {var}:")
+    print("t-statistic:", t_stat)
+    print("p-value:", p_value)
+    print()
+
+
+# Regression Analysis (Linear Regression)
+for var in numeric_vars:
+    X = df.dropna(subset=[var])[["Na %", "Mg %", "Al %", "Si %", "P %", "S %", "K % ", "%Ca", "%Ti", "%Mn","%Fe"]]  # Independent variables
+    y = df.dropna(subset=[var])[var]  # Dependent variable
+
+    imputer = SimpleImputer(strategy="mean")  # or "median", "most_frequent", etc.
+    X_imputed = imputer.fit_transform(X)
+
+    model = LinearRegression()
+    model.fit(X_imputed, y)
+
+    coefficients = pd.DataFrame({"Variable": X.columns, "Coefficient": model.coef_})
+    print(f"Linear Regression for {var}:")
+    print(coefficients)
+    print()
+
+# Cluster Analysis (K-means Clustering)
+X = df[numeric_vars]
+
+imputer = SimpleImputer(strategy="mean")  # or "median", "most_frequent", etc.
+X_imputed = imputer.fit_transform(X)
+
+kmeans = KMeans(n_clusters=3)  # Choose the desired number of clusters
+kmeans.fit(X_imputed)
+
+cluster_labels = kmeans.labels_
+df["Cluster"] = cluster_labels
+print("Cluster Analysis:")
+print(df["Cluster"].value_counts())
+print()
+
+# Principal Component Analysis (PCA)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_imputed)
+
+pca = PCA(n_components=2)  # Choose the desired number of principal components
+pca_scores = pca.fit_transform(X_scaled)
+
+df["PC1"] = pca_scores[:, 0]
+df["PC2"] = pca_scores[:, 1]
+
+# Data Visualization (Histogram)
+for var in numeric_vars:
+    plt.hist(df.dropna(subset=[var])[var], bins=10)
+    plt.xlabel(var)
+    plt.ylabel("Frequency")
+    plt.title(f"Distribution of {var}")
+    plt.show()
