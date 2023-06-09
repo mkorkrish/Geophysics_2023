@@ -17,6 +17,21 @@ df.replace('<0.01', np.nan, inplace=True)  # Replace '<0.01' with NaN, adjust as
 # Descriptive Statistics
 numeric_vars = ["Na %", "Mg %", "Al %", "Si %", "P %", "S %", "K % ", "%Ca", "%Ti", "%Mn", "%Fe"]  # Add other numeric variables as needed
 
+# Calculate and display correlation matrix
+corr_matrix = df[numeric_vars].corr()
+print("Correlation Matrix:")
+print(corr_matrix)
+print()
+
+# Plotting correlation matrix
+plt.figure(figsize=(10, 8))
+plt.imshow(corr_matrix, cmap='coolwarm', interpolation='nearest')
+plt.colorbar()
+plt.title("Correlation Matrix", fontsize=14)
+plt.xticks(np.arange(len(numeric_vars)), numeric_vars, rotation=45)
+plt.yticks(np.arange(len(numeric_vars)), numeric_vars)
+plt.show()
+
 for var in numeric_vars:
     desc_stats = df[var].describe()
     print(f"Descriptive Statistics for {var}:")
@@ -30,21 +45,6 @@ for var in numeric_vars:
     plt.ylabel("Frequency", fontsize=12)
     plt.title(f"Distribution of {var}", fontsize=14)
     plt.grid(True)
-    plt.show()
-
-    # Correlation Analysis
-    corr_matrix = df[numeric_vars].corr()
-    print("Correlation Matrix:")
-    print(corr_matrix)
-    print()
-
-    # Plotting correlation matrix
-    plt.figure(figsize=(10, 8))
-    plt.imshow(corr_matrix, cmap='coolwarm', interpolation='nearest')
-    plt.colorbar()
-    plt.title("Correlation Matrix", fontsize=14)
-    plt.xticks(np.arange(len(numeric_vars)), numeric_vars, rotation=45)
-    plt.yticks(np.arange(len(numeric_vars)), numeric_vars)
     plt.show()
 
     # Hypothesis Testing (t-test)
