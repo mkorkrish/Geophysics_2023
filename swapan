@@ -22,23 +22,40 @@ for var in numeric_vars:
     print(f"Descriptive Statistics for {var}:")
     print(desc_stats)
     print()
+    
+    # Plotting histogram
+    plt.figure(figsize=(8, 6))
+    plt.hist(df.dropna(subset=[var])[var], bins=10, color='steelblue', edgecolor='black', alpha=0.7)
+    plt.xlabel(f"{var} (%)", fontsize=12)
+    plt.ylabel("Frequency", fontsize=12)
+    plt.title(f"Distribution of {var}", fontsize=14)
+    plt.grid(True)
+    plt.show()
 
-# Correlation Analysis
-corr_matrix = df[numeric_vars].corr()
-print("Correlation Matrix:")
-print(corr_matrix)
-print()
+    # Correlation Analysis
+    corr_matrix = df[numeric_vars].corr()
+    print("Correlation Matrix:")
+    print(corr_matrix)
+    print()
 
-# Hypothesis Testing (t-test)
-grouped_data = df.groupby("Formation")
+    # Plotting correlation matrix
+    plt.figure(figsize=(10, 8))
+    plt.imshow(corr_matrix, cmap='coolwarm', interpolation='nearest')
+    plt.colorbar()
+    plt.title("Correlation Matrix", fontsize=14)
+    plt.xticks(np.arange(len(numeric_vars)), numeric_vars, rotation=45)
+    plt.yticks(np.arange(len(numeric_vars)), numeric_vars)
+    plt.show()
 
-for var in numeric_vars:
-    upper_bakken = grouped_data.get_group("Upper Bakken")
-    lower_bakken = grouped_data.get_group("Lower Bakken")
+    # Hypothesis Testing (t-test)
+    grouped_data = df.groupby("Formation")
+
+    upper_bakken = grouped_data.get_group("Upper Bakken").copy()
+    lower_bakken = grouped_data.get_group("Lower Bakken").copy()
 
     # Convert columns to numeric data type
-    upper_bakken[var] = pd.to_numeric(upper_bakken[var], errors="coerce")
-    lower_bakken[var] = pd.to_numeric(lower_bakken[var], errors="coerce")
+    upper_bakken.loc[:, var] = pd.to_numeric(upper_bakken[var], errors="coerce")
+    lower_bakken.loc[:, var] = pd.to_numeric(lower_bakken[var], errors="coerce")
 
     t_stat, p_value = stats.ttest_ind(upper_bakken[var].dropna(), lower_bakken[var].dropna(), nan_policy='omit')
     print(f"Hypothesis Testing for {var}:")
@@ -46,9 +63,7 @@ for var in numeric_vars:
     print("p-value:", p_value)
     print()
 
-
-# Regression Analysis (Linear Regression)
-for var in numeric_vars:
+    # Regression Analysis (Linear Regression)
     X = df.dropna(subset=[var])[["Na %", "Mg %", "Al %", "Si %", "P %", "S %", "K % ", "%Ca", "%Ti", "%Mn","%Fe"]]  # Independent variables
     y = df.dropna(subset=[var])[var]  # Dependent variable
 
@@ -62,6 +77,17 @@ for var in numeric_vars:
     print(f"Linear Regression for {var}:")
     print(coefficients)
     print()
+
+    # Plotting linear regression
+    y_pred = model.predict(X_imputed)
+
+    plt.figure(figsize=(8, 6))
+    plt.scatter(y, y_pred, color='steelblue', edgecolor='black', alpha=0.7)
+    plt.xlabel("Actual Value", fontsize=12)
+    plt.ylabel("Predicted Value", fontsize=12)
+    plt.title(f"Linear Regression for {var}", fontsize=14)
+    plt.grid(True)
+    plt.show()
 
 # Cluster Analysis (K-means Clustering)
 X = df[numeric_vars]
@@ -88,10 +114,12 @@ pca_scores = pca.fit_transform(X_scaled)
 df["PC1"] = pca_scores[:, 0]
 df["PC2"] = pca_scores[:, 1]
 
-# Data Visualization (Histogram)
-for var in numeric_vars:
-    plt.hist(df.dropna(subset=[var])[var], bins=10)
-    plt.xlabel(var)
-    plt.ylabel("Frequency")
-    plt.title(f"Distribution of {var}")
-    plt.show()
+# Data Visualization (PCA Plot)
+plt.figure(figsize=(8, 6))
+plt.scatter(df["PC1"], df["PC2"], c=df["Cluster"], cmap='viridis')
+plt.xlabel("Principal Component 1", fontsize=12)
+plt.ylabel("Principal Component 2", fontsize=12)
+plt.title("PCA Plot", fontsize=14)
+plt.colorbar(label='Cluster')
+plt.grid(True)
+plt.show()
